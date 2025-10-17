@@ -13,7 +13,7 @@ from mcp.server.fastmcp import FastMCP
 from ..config import ensure_client
 from ..utils.formatters import format_task
 from ..utils.timezone import normalize_iso_date
-from ..utils.validators import validate_task_data
+from ..utils.validators import validate_task_data, normalize_priority
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def register_task_tools(mcp: FastMCP):
                 - desc (optional): Description of checklist
                 - start_date (optional): Start date in ISO format (YYYY-MM-DDTHH:mm:ss+0000)
                 - due_date (optional): Due date in ISO format (YYYY-MM-DDTHH:mm:ss+0000)
-                - priority (optional): Priority level {0: "None", 1: "Low", 3: "Medium", 5: "High"}
+                - priority (optional): Priority level - "none", "low", "medium", or "high" (case-insensitive)
                 - is_all_day (optional): Whether this is an all-day task (boolean)
                 - time_zone (optional): Time zone (e.g., "America/Los_Angeles")
                 - reminders (optional): List of reminder triggers (e.g., ["TRIGGER:P0DT9H0M0S"])
@@ -48,11 +48,11 @@ def register_task_tools(mcp: FastMCP):
         
         Examples:
             # Single task
-            {"title": "Buy milk", "project_id": "1234ABC", "priority": 3}
+            {"title": "Buy milk", "project_id": "1234ABC", "priority": "medium"}
             
             # Multiple tasks
             [
-                {"title": "Example A", "project_id": "1234ABC", "priority": 5, "is_all_day": True},
+                {"title": "Example A", "project_id": "1234ABC", "priority": "high", "is_all_day": True},
                 {"title": "Example B", "project_id": "1234XYZ", "content": "Description", "due_date": "2025-07-19T10:00:00+0000"}
             ]
         """
@@ -98,7 +98,9 @@ def register_task_tools(mcp: FastMCP):
                     desc = task_data.get('desc')
                     start_date = task_data.get('start_date')
                     due_date = task_data.get('due_date')
-                    priority = task_data.get('priority', 0)
+                    # Normalize priority from string to int
+                    priority_raw = task_data.get('priority', 0)
+                    priority = normalize_priority(priority_raw) if priority_raw else 0
                     is_all_day = task_data.get('is_all_day', False)
                     time_zone = task_data.get('time_zone')
                     reminders = task_data.get('reminders')
@@ -176,7 +178,7 @@ def register_task_tools(mcp: FastMCP):
                 - desc (optional): New description of checklist
                 - start_date (optional): New start date in ISO format (YYYY-MM-DDTHH:mm:ss+0000)
                 - due_date (optional): New due date in ISO format (YYYY-MM-DDTHH:mm:ss+0000)
-                - priority (optional): New priority level {0: "None", 1: "Low", 3: "Medium", 5: "High"}
+                - priority (optional): New priority level - "none", "low", "medium", or "high" (case-insensitive)
                 - is_all_day (optional): Whether this is an all-day task
                 - time_zone (optional): Time zone (e.g., "America/Los_Angeles")
                 - reminders (optional): List of reminder triggers
@@ -186,11 +188,11 @@ def register_task_tools(mcp: FastMCP):
         
         Examples:
             # Single task
-            {"task_id": "abc123", "project_id": "xyz789", "priority": 5}
+            {"task_id": "abc123", "project_id": "xyz789", "priority": "high"}
             
             # Multiple tasks
             [
-                {"task_id": "abc123", "project_id": "xyz789", "priority": 5},
+                {"task_id": "abc123", "project_id": "xyz789", "priority": "high"},
                 {"task_id": "def456", "project_id": "xyz789", "title": "New Title", "due_date": "2025-12-31T23:59:59+0000"}
             ]
         """
@@ -220,9 +222,12 @@ def register_task_tools(mcp: FastMCP):
                 validation_errors.append(f"Task {i + 1}: Missing required field 'project_id'")
             
             # Validate priority if provided
+            from ..utils.validators import validate_priority
             priority = task_data.get('priority')
-            if priority is not None and priority not in [0, 1, 3, 5]:
-                validation_errors.append(f"Task {i + 1}: Invalid priority. Must be 0, 1, 3, or 5")
+            if priority is not None:
+                priority_error = validate_priority(priority, i)
+                if priority_error:
+                    validation_errors.append(priority_error)
             
             # Validate dates if provided
             for date_field in ['start_date', 'due_date']:
@@ -248,6 +253,10 @@ def register_task_tools(mcp: FastMCP):
                     task_id = task_data['task_id']
                     project_id = task_data['project_id']
                     
+                    # Normalize priority if provided
+                    priority_raw = task_data.get('priority')
+                    priority = normalize_priority(priority_raw) if priority_raw is not None else None
+                    
                     # Update the task
                     result = ticktick.update_task(
                         task_id=task_id,
@@ -257,7 +266,7 @@ def register_task_tools(mcp: FastMCP):
                         desc=task_data.get('desc'),
                         start_date=task_data.get('start_date'),
                         due_date=task_data.get('due_date'),
-                        priority=task_data.get('priority'),
+                        priority=priority,
                         is_all_day=task_data.get('is_all_day'),
                         time_zone=task_data.get('time_zone'),
                         reminders=task_data.get('reminders'),
@@ -521,7 +530,7 @@ def register_task_tools(mcp: FastMCP):
                 - parent_task_id (required): ID of the parent task
                 - project_id (required): ID of the project (must be same for both parent and subtask)
                 - content (optional): Content/description for the subtask
-                - priority (optional): Priority level {0: "None", 1: "Low", 3: "Medium", 5: "High"}
+                - priority (optional): Priority level - "none", "low", "medium", or "high" (case-insensitive)
         
         Examples:
             # Single subtask
@@ -529,7 +538,7 @@ def register_task_tools(mcp: FastMCP):
             
             # Multiple subtasks
             [
-                {"subtask_title": "Subtask 1", "parent_task_id": "abc123", "project_id": "xyz789", "priority": 3},
+                {"subtask_title": "Subtask 1", "parent_task_id": "abc123", "project_id": "xyz789", "priority": "medium"},
                 {"subtask_title": "Subtask 2", "parent_task_id": "abc123", "project_id": "xyz789", "content": "Details"}
             ]
         """
@@ -561,9 +570,13 @@ def register_task_tools(mcp: FastMCP):
                 validation_errors.append(f"Subtask {i + 1}: Missing required field 'project_id'")
             
             # Validate priority if provided
-            priority = subtask_data.get('priority', 0)
-            if priority not in [0, 1, 3, 5]:
-                validation_errors.append(f"Subtask {i + 1}: Invalid priority. Must be 0, 1, 3, or 5")
+            priority = subtask_data.get('priority')
+            if priority is not None:
+                from ..utils.validators import validate_priority
+                priority_error = validate_priority(priority, i)
+                if priority_error:
+                    # Change "Task" to "Subtask" in the error message
+                    validation_errors.append(priority_error.replace("Task", "Subtask"))
         
         if validation_errors:
             return "Validation errors found:\n" + "\n".join(validation_errors)
@@ -580,7 +593,9 @@ def register_task_tools(mcp: FastMCP):
                     parent_task_id = subtask_data['parent_task_id']
                     project_id = subtask_data['project_id']
                     content = subtask_data.get('content')
-                    priority = subtask_data.get('priority', 0)
+                    # Normalize priority from string to int
+                    priority_raw = subtask_data.get('priority', 0)
+                    priority = normalize_priority(priority_raw) if priority_raw else 0
                     
                     result = ticktick.create_subtask(
                         subtask_title=subtask_title,

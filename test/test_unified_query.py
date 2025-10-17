@@ -61,7 +61,7 @@ def setup_test_environment(client: TickTickClient):
         title="[统一查询测试] 今天高优先级",
         project_id=project_id,
         due_date=datetime.now().strftime("%Y-%m-%dT23:59:59+0000"),
-        priority=5,
+        priority="high",
         content="测试任务：今天到期，高优先级"
     )
     test_tasks.append(('today_high', task1['id']))
@@ -71,7 +71,7 @@ def setup_test_environment(client: TickTickClient):
         title="[统一查询测试] 明天中优先级",
         project_id=project_id,
         due_date=(datetime.now() + timedelta(days=1)).strftime("%Y-%m-%dT23:59:59+0000"),
-        priority=3,
+        priority="medium",
         content="测试任务：明天到期，中优先级"
     )
     test_tasks.append(('tomorrow_medium', task2['id']))
@@ -81,7 +81,7 @@ def setup_test_environment(client: TickTickClient):
         title="[统一查询测试] 过期高优先级",
         project_id=project_id,
         due_date=(datetime.now() - timedelta(days=1)).strftime("%Y-%m-%dT23:59:59+0000"),
-        priority=5,
+        priority="high",
         content="测试任务：已过期，高优先级"
     )
     test_tasks.append(('overdue_high', task3['id']))
@@ -91,7 +91,7 @@ def setup_test_environment(client: TickTickClient):
         title="[统一查询测试] 3天后低优先级",
         project_id=project_id,
         due_date=(datetime.now() + timedelta(days=3)).strftime("%Y-%m-%dT23:59:59+0000"),
-        priority=1,
+        priority="low",
         content="测试任务：3天后，低优先级"
     )
     test_tasks.append(('custom_low', task4['id']))
@@ -100,7 +100,7 @@ def setup_test_environment(client: TickTickClient):
     task5 = client.create_task(
         title="[统一查询测试] Team meeting准备",
         project_id=project_id,
-        priority=3,
+        priority="medium",
         content="准备team meeting的材料"
     )
     test_tasks.append(('meeting', task5['id']))

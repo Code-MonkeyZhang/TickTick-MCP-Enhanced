@@ -5,7 +5,7 @@ import requests
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -229,10 +229,17 @@ class TickTickClient:
     
     def create_task(self, title: str, project_id: str, content: str = None, 
                    desc: str = None, start_date: str = None, due_date: str = None, 
-                   priority: int = 0, is_all_day: bool = False, time_zone: str = None,
+                   priority: Union[int, str] = 0, is_all_day: bool = False, time_zone: str = None,
                    reminders: List[str] = None, repeat_flag: str = None, 
                    sort_order: int = None, items: List[Dict] = None) -> Dict:
-        """Creates a new task."""
+        """Creates a new task.
+        
+        Args:
+            priority: Priority level - can be int (0, 1, 3, 5) or str ("none", "low", "medium", "high")
+        """
+        # Import here to avoid circular imports
+        from .utils.validators import normalize_priority
+        
         data = {
             "title": title,
             "projectId": project_id
@@ -247,7 +254,9 @@ class TickTickClient:
         if due_date:
             data["dueDate"] = due_date
         if priority is not None:
-            data["priority"] = priority
+            # Convert string priority to int if needed
+            priority_value = normalize_priority(priority) if priority else 0
+            data["priority"] = priority_value
         if is_all_day is not None:
             data["isAllDay"] = is_all_day
         if time_zone:
@@ -264,12 +273,19 @@ class TickTickClient:
         return self._make_request("POST", "/task", data)
     
     def update_task(self, task_id: str, project_id: str, title: str = None, 
-                   content: str = None, desc: str = None, priority: int = None, 
+                   content: str = None, desc: str = None, priority: Union[int, str] = None, 
                    start_date: str = None, due_date: str = None, is_all_day: bool = None,
                    time_zone: str = None, reminders: List[str] = None, 
                    repeat_flag: str = None, sort_order: int = None, 
                    items: List[Dict] = None) -> Dict:
-        """Updates an existing task."""
+        """Updates an existing task.
+        
+        Args:
+            priority: Priority level - can be int (0, 1, 3, 5) or str ("none", "low", "medium", "high")
+        """
+        # Import here to avoid circular imports
+        from .utils.validators import normalize_priority
+        
         data = {
             "id": task_id,
             "projectId": project_id
@@ -282,7 +298,10 @@ class TickTickClient:
         if desc:
             data["desc"] = desc
         if priority is not None:
-            data["priority"] = priority
+            # Convert string priority to int if needed
+            priority_value = normalize_priority(priority)
+            if priority_value is not None:
+                data["priority"] = priority_value
         if start_date:
             data["startDate"] = start_date
         if due_date:
@@ -311,7 +330,7 @@ class TickTickClient:
         return self._make_request("DELETE", f"/project/{project_id}/task/{task_id}")
     
     def create_subtask(self, subtask_title: str, parent_task_id: str, project_id: str, 
-                      content: str = None, priority: int = 0) -> Dict:
+                      content: str = None, priority: Union[int, str] = 0) -> Dict:
         """
         Creates a subtask for a parent task within the same project.
         
@@ -320,11 +339,14 @@ class TickTickClient:
             parent_task_id: ID of the parent task
             project_id: ID of the project (must be same for both parent and subtask)
             content: Optional content/description for the subtask
-            priority: Priority level (0-3, where 3 is highest)
+            priority: Priority level - can be int (0, 1, 3, 5) or str ("none", "low", "medium", "high")
         
         Returns:
             API response as a dictionary containing the created subtask
         """
+        # Import here to avoid circular imports
+        from .utils.validators import normalize_priority
+        
         data = {
             "title": subtask_title,
             "projectId": project_id,
@@ -334,6 +356,8 @@ class TickTickClient:
         if content:
             data["content"] = content
         if priority is not None:
-            data["priority"] = priority
+            # Convert string priority to int if needed
+            priority_value = normalize_priority(priority) if priority else 0
+            data["priority"] = priority_value
             
         return self._make_request("POST", "/task", data)

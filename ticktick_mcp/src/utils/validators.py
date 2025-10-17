@@ -7,7 +7,7 @@ by various criteria, and performing search operations.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, List, Any, Optional, Callable, Union
 from zoneinfo import ZoneInfo
 
 from .timezone import normalize_iso_date, get_user_timezone_today, DEFAULT_TIMEZONE
@@ -15,6 +15,75 @@ from .formatters import format_task, format_project
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+# Priority mapping constants
+PRIORITY_MAP = {
+    "none": 0,
+    "low": 1,
+    "medium": 3,
+    "high": 5
+}
+
+# Reverse mapping for display purposes
+PRIORITY_NAME_MAP = {
+    0: "none",
+    1: "low",
+    3: "medium",
+    5: "high"
+}
+
+
+def normalize_priority(priority: Union[str, int, None]) -> Optional[int]:
+    """
+    Convert priority from string to integer, with backward compatibility.
+    
+    Args:
+        priority: Priority as string ("none", "low", "medium", "high") or int (0, 1, 3, 5)
+    
+    Returns:
+        Integer priority value (0, 1, 3, 5) or None
+    """
+    if priority is None:
+        return None
+    
+    if isinstance(priority, int):
+        # Backward compatibility: accept integer directly
+        if priority in [0, 1, 3, 5]:
+            return priority
+        return None
+    
+    if isinstance(priority, str):
+        return PRIORITY_MAP.get(priority.lower())
+    
+    return None
+
+
+def validate_priority(priority: Union[str, int, None], task_index: int) -> Optional[str]:
+    """
+    Validate priority value and return error message if invalid.
+    
+    Args:
+        priority: Priority value to validate
+        task_index: Task index for error messages
+    
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if priority is None:
+        return None
+    
+    if isinstance(priority, int):
+        if priority not in [0, 1, 3, 5]:
+            return f"Task {task_index + 1}: Invalid priority {priority}. Must be 0, 1, 3, or 5"
+        return None
+    
+    if isinstance(priority, str):
+        if priority.lower() not in PRIORITY_MAP:
+            valid_values = ", ".join([f'"{k}"' for k in PRIORITY_MAP.keys()])
+            return f"Task {task_index + 1}: Invalid priority '{priority}'. Must be one of: {valid_values}"
+        return None
+    
+    return f"Task {task_index + 1}: Priority must be a string or integer"
 
 
 def is_task_due_today(task: Dict[str, Any]) -> bool:
@@ -145,8 +214,9 @@ def validate_task_data(task_data: Dict[str, Any], task_index: int) -> Optional[s
     
     # Validate priority if provided
     priority = task_data.get('priority')
-    if priority is not None and priority not in [0, 1, 3, 5]:
-        return f"Task {task_index + 1}: Invalid priority {priority}. Must be 0 (None), 1 (Low), 3 (Medium), or 5 (High)"
+    priority_error = validate_priority(priority, task_index)
+    if priority_error:
+        return priority_error
     
     # Validate dates if provided
     for date_field in ['start_date', 'due_date']:

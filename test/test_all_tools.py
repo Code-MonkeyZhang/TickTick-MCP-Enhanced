@@ -218,7 +218,7 @@ def test_create_tasks_single(client: TickTickClient, results: TestResults):
             project_id=project_id,
             content="这是一个测试任务",
             due_date=tomorrow,
-            priority=3
+            priority="medium"
         )
         
         if 'error' in task:
@@ -248,7 +248,7 @@ def test_create_tasks_batch(client: TickTickClient, results: TestResults):
             task = client.create_task(
                 title=f"[批量测试] 任务 {i+1}",
                 project_id=project_id,
-                priority=1
+                priority="low"
             )
             if 'error' not in task:
                 task_ids.append(task['id'])
@@ -276,14 +276,14 @@ def test_update_tasks(client: TickTickClient, results: TestResults):
             task_id=task_id,
             project_id=project_id,
             title="[测试任务] 已更新",
-            priority=5
+            priority="high"
         )
         
         if 'error' in task:
             results.record_fail("update_tasks", task['error'])
             return
         
-        if task.get('priority') == 5:
+        if task.get('priority') == 5:  # API 返回的仍是数字
             results.record_pass("更新任务 (优先级改为高)")
         else:
             results.record_fail("update_tasks", "任务更新未生效")
@@ -305,7 +305,7 @@ def test_create_subtasks(client: TickTickClient, results: TestResults):
             subtask_title="[测试子任务] 子任务1",
             parent_task_id=task_id,
             project_id=project_id,
-            priority=3
+            priority="medium"
         )
         
         if 'error' in subtask:
