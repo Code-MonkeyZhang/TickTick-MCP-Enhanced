@@ -2,7 +2,8 @@
 
 ---
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for TickTick that enables interacting with your TickTick task management system.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that allows you manage your daily routine TickTick task with LLMs!
+
 ### ✨ Key Enhancements
 
 This enhanced version builds upon the original [ticktick-mcp](https://github.com/jacepark12/ticktick-mcp) with significant improvements:
@@ -28,6 +29,16 @@ This enhanced version builds upon the original [ticktick-mcp](https://github.com
 - [uv](https://github.com/astral-sh/uv) - Fast Python package installer and resolver
 - TickTick account with API access
 - TickTick API credentials (Client ID, Client Secret)
+
+### Authentication
+
+You need to have a TickTick account to use this MCP.
+
+Register your application at the [TickTick Developer Center](https://developer.ticktick.com/manage). If you are using Chinese version, at [Dida Developer Center](https://developer.dida365.com/manage).
+
+- Click "New App"
+- Set the redirect URI to `http://localhost:8000/callback`
+- Note your Client ID and Client Secret
 
 ### Installation
 
@@ -75,37 +86,6 @@ This enhanced version builds upon the original [ticktick-mcp](https://github.com
    ```bash
    uv run test_server.py
    ```
-
-### Authentication
-
-#### TickTick
-
-1. Register your application at the [TickTick Developer Center](https://developer.ticktick.com/manage)
-
-   - Set the redirect URI to `http://localhost:8000/callback`
-   - Note your Client ID and Client Secret
-
-2. Run the authentication command:
-
-   ```bash
-   uv run -m ticktick_mcp.cli auth
-   ```
-
-3. Follow the prompts and authorize the application
-
-The server handles token refresh automatically.
-
-#### Dida365 (滴答清单)
-
-For Dida365 users, add these environment variables to your `.env` file:
-
-```env
-TICKTICK_BASE_URL='https://api.dida365.com/open/v1'
-TICKTICK_AUTH_URL='https://dida365.com/oauth/authorize'
-TICKTICK_TOKEN_URL='https://dida365.com/oauth/token'
-```
-
-Then follow the same authentication steps.
 
 ### Use MCP in Claude Desktop and other LLM applicaitons
 
@@ -205,15 +185,9 @@ complete_tasks([
 - "What's in my inbox?"
 - "Create a task 'Buy groceries' with high priority"
 - "Show me all high priority tasks due today"
-
-**Batch Operations:**
-
 - "Create these three tasks: 'Buy groceries', 'Call mom', and 'Finish report'"
 - "Mark all overdue tasks as complete"
 - "Delete all completed tasks from archive"
-
-**Advanced Queries:**
-
 - "Show me high priority tasks in my Work project"
 - "Find all tasks with 'meeting' due this week"
 - "What tasks are overdue in my inbox?"
