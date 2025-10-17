@@ -11,7 +11,7 @@ import os
 import logging
 from typing import Optional
 from pathlib import Path
-from .src.auth import TickTickAuth
+from .src.auth import TickTickAuth, VERSION_CONFIGS
 
 def main() -> int:
     """Run the authentication flow."""
@@ -28,11 +28,18 @@ def main() -> int:
     
 This utility will help you authenticate with TickTick
 and obtain the necessary access tokens for the TickTick MCP server.
-
+    """)
+    
+    # First, let user select the version
+    selected_version = select_version()
+    selected_config = VERSION_CONFIGS[selected_version]
+    
+    # Display version-specific information
+    print(f"""
 Before you begin, you will need:
-1. A TickTick account (https://ticktick.com)
-2. A registered TickTick API application (https://developer.ticktick.com)
-3. Your Client ID and Client Secret from the TickTick Developer Center
+1. A {selected_config['name']} account ({selected_config['account_url']})
+2. A registered API application ({selected_config['developer_url']})
+3. Your Client ID and Client Secret from the Developer Center
     """)
     
     # Check if .env file exists and already has credentials
@@ -49,7 +56,7 @@ Before you begin, you will need:
     client_secret: Optional[str] = None
     
     if has_credentials:
-        print("Existing TickTick credentials found in .env file.")
+        print("Existing credentials found in .env file.")
         use_existing = input("Do you want to use these credentials? (y/n): ").lower().strip()
         
         if use_existing == 'y':
@@ -57,13 +64,13 @@ Before you begin, you will need:
             print("Using existing credentials from .env file.")
         else:
             # Ask for new credentials
-            client_id = get_user_input("Enter your TickTick Client ID: ")
-            client_secret = get_user_input("Enter your TickTick Client Secret: ")
+            client_id = get_user_input("Enter your Client ID: ")
+            client_secret = get_user_input("Enter your Client Secret: ")
     else:
         # No existing credentials, ask for new ones
-        print("No existing TickTick credentials found in .env file.")
-        client_id = get_user_input("Enter your TickTick Client ID: ")
-        client_secret = get_user_input("Enter your TickTick Client Secret: ")
+        print("No existing credentials found in .env file.")
+        client_id = get_user_input("Enter your Client ID: ")
+        client_secret = get_user_input("Enter your Client Secret: ")
     
     # Initialize the auth manager
     auth = TickTickAuth(
@@ -71,7 +78,13 @@ Before you begin, you will need:
         client_secret=client_secret
     )
     
-    print("\nStarting the OAuth authentication flow...")
+    # Set the version configuration
+    auth.set_version_config(selected_version)
+    
+    # Save version configuration to .env file
+    auth.save_version_config_to_env(selected_version)
+    
+    print(f"\nStarting the OAuth authentication flow for {selected_config['name']}...")
     print("A browser window will open for you to authorize the application.")
     print("After authorization, you will be redirected back to this application.\n")
     
@@ -81,15 +94,15 @@ Before you begin, you will need:
     print("\n" + result)
     
     if "successful" in result.lower():
-        print("""
-Authentication complete! You can now use the TickTick MCP server.
+        print(f"""
+Authentication complete! You can now use the {selected_config['name']} MCP server.
 
 To start the server with Claude for Desktop:
 1. Make sure you have configured Claude for Desktop
 2. Restart Claude for Desktop
 3. You should now see the TickTick tools available in Claude
 
-Enjoy using TickTick through Claude!
+Enjoy using {selected_config['name']} through Claude!
         """)
         return 0
     else:
@@ -105,6 +118,31 @@ For further assistance, please refer to the documentation or raise an issue
 on the GitHub repository.
         """)
         return 1
+
+def select_version() -> str:
+    """
+    Ask user to select TickTick version and return the version key.
+    
+    Returns:
+        Version key ('international' or 'china')
+    """
+    print("\nPlease select your account type:")
+    print("1. TickTick International (ticktick.com)")
+    print("2. TickTick China / 滴答清单 (dida365.com)")
+    
+    while True:
+        choice = input("\nPlease enter your choice (1/2): ").strip()
+        
+        if choice == "1":
+            config = VERSION_CONFIGS["international"]
+            print(f"✓ You selected: {config['name']} ({config['account_url']})")
+            return "international"
+        elif choice == "2":
+            config = VERSION_CONFIGS["china"]
+            print(f"✓ You selected: {config['name']} ({config['account_url']})")
+            return "china"
+        else:
+            print("Invalid choice, please enter 1 or 2")
 
 def get_user_input(prompt: str) -> str:
     """Get user input with validation."""

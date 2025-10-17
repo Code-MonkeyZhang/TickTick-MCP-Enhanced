@@ -26,6 +26,28 @@ logger = logging.getLogger(__name__)
 # Default scopes for TickTick API
 DEFAULT_SCOPES = ["tasks:read", "tasks:write"]
 
+# Version configurations for different TickTick variants
+VERSION_CONFIGS = {
+    "international": {
+        "name": "TickTick International",
+        "name_cn": "TickTick 国际版",
+        "auth_url": "https://ticktick.com/oauth/authorize",
+        "token_url": "https://ticktick.com/oauth/token",
+        "base_url": "https://api.ticktick.com/open/v1",
+        "developer_url": "https://developer.ticktick.com",
+        "account_url": "https://ticktick.com"
+    },
+    "china": {
+        "name": "滴答清单中国版",
+        "name_cn": "滴答清单",
+        "auth_url": "https://dida365.com/oauth/authorize",
+        "token_url": "https://dida365.com/oauth/token",
+        "base_url": "https://api.dida365.com/open/v1",
+        "developer_url": "https://developer.dida365.com",
+        "account_url": "https://dida365.com"
+    }
+}
+
 class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
     """Handle OAuth callback requests."""
     
@@ -165,6 +187,27 @@ class TickTickAuth:
             logger.warning("TickTick client ID or client secret is missing. "
                           "Please set TICKTICK_CLIENT_ID and TICKTICK_CLIENT_SECRET "
                           "environment variables or provide them as parameters.")
+    
+    def set_version_config(self, version_key: str) -> bool:
+        """
+        Set the version configuration for the authentication URLs.
+        
+        Args:
+            version_key: The version key ('international' or 'china')
+            
+        Returns:
+            True if successful, False if invalid version key
+        """
+        if version_key not in VERSION_CONFIGS:
+            logger.error(f"Invalid version key: {version_key}")
+            return False
+        
+        config = VERSION_CONFIGS[version_key]
+        self.auth_url = config["auth_url"]
+        self.token_url = config["token_url"]
+        
+        logger.info(f"Version configuration set to: {config['name']}")
+        return True
     
     def get_authorization_url(self, scopes: list = None, state: str = None) -> str:
         """
@@ -344,6 +387,51 @@ class TickTickAuth:
                 f.write(f"{key}={value}\n")
         
         logger.info("Tokens saved to .env file")
+    
+    def save_version_config_to_env(self, version_key: str) -> bool:
+        """
+        Save the version configuration URLs to the .env file.
+        
+        Args:
+            version_key: The version key ('international' or 'china')
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if version_key not in VERSION_CONFIGS:
+            logger.error(f"Invalid version key: {version_key}")
+            return False
+        
+        config = VERSION_CONFIGS[version_key]
+        
+        # Load existing .env file content
+        env_path = Path('.env')
+        env_content = {}
+        
+        if env_path.exists():
+            with open(env_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        env_content[key] = value
+        
+        # Update with version configuration
+        env_content["TICKTICK_AUTH_URL"] = config["auth_url"]
+        env_content["TICKTICK_TOKEN_URL"] = config["token_url"]
+        env_content["TICKTICK_BASE_URL"] = config["base_url"]
+        
+        # Write back to .env file
+        try:
+            with open(env_path, 'w') as f:
+                for key, value in env_content.items():
+                    f.write(f"{key}={value}\n")
+            
+            logger.info(f"Version configuration for {config['name']} saved to .env file")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving version configuration to .env file: {e}")
+            return False
 
 def setup_auth_cli():
     """Run the authentication flow as a CLI utility."""
