@@ -1,15 +1,8 @@
-# TickTick MCP Server | 滴答清单 MCP 服务器
-
-[English](#english) | [中文](#中文)
+# TickTick MCP Server
 
 ---
 
-`<a name="english"></a>`
-
-## English
-
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for TickTick that enables interacting with your TickTick task management system directly through Claude and other MCP clients.
-
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for TickTick that enables interacting with your TickTick task management system.
 ### ✨ Key Enhancements
 
 This enhanced version builds upon the original [ticktick-mcp](https://github.com/jacepark12/ticktick-mcp) with significant improvements:
