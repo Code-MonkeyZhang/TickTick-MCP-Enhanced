@@ -519,9 +519,7 @@ def register_task_tools(mcp: FastMCP):
     @mcp.tool()
     async def create_subtasks(subtasks: Union[Dict[str, Any], List[Dict[str, Any]]]) -> str:
         """
-        Create one or more subtasks for parent tasks.
-        
-        Supports both single subtask and batch creation. For single subtask, you can pass
+        Create one or more subtasks for parent tasks. For single subtask, you can pass
         a dictionary directly. For multiple subtasks, pass a list of dictionaries.
         
         Args:
